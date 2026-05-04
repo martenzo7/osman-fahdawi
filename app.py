@@ -161,8 +161,10 @@ def download_cv():
         return send_file(cv_path, as_attachment=True, download_name='Osman_Abed_CV.pdf')
     abort(404)
 
+
+with app.app_context():
+    db.create_all()
+    seed()
+
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-        seed()
     app.run(debug=True, port=5000)
