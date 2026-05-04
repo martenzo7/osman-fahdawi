@@ -100,6 +100,15 @@ class Project(db.Model):
             d['readme'] = self.get_readme()
         return d
 
+def seed():
+    if Project.query.count() > 0:
+        return
+    projects = [
+        Project(name="Megga App", slug="megga", description="Megga Application", status="ongoing", tech_stack="Python, Flask, WebSocket, NLP", github_url="https://github.com/martenzo7/megga", images=""),
+    ]
+    db.session.add_all(projects)
+    db.session.commit()
+
 
 @app.route('/')
 @app.route('/projects')
@@ -155,4 +164,5 @@ def download_cv():
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
+        seed()
     app.run(debug=True, port=5000)
