@@ -105,6 +105,7 @@ def seed():
         return
     projects = [
         Project(name="Megga App", slug="megga", description="Megga Application", status="ongoing", tech_stack="Python, Flask, WebSocket, NLP", github_url="https://github.com/martenzo7/megga", images=""),
+        Project(name="sentiment AI", slug="sentiment-ai", description="Bidirectional LSTM with Bahdanau Attention for real-time sentiment classification, served via a Flask web app with attention weight visualization.", status="done", tech_stack="PyTorch, NLP, Flask, Deep Learning, LSTM", github_url="https://github.com/martenzo7", images=""),
     ]
     db.session.add_all(projects)
     db.session.commit()
