@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SentimentAI — PyTorch LSTM Analyzer</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0a0a0f;
+      --surface:   #13131c;
+      --border:    #1e1e2e;
+      --accent:    #7c6aff;
+      --accent2:   #ff6a9e;
+      --positive:  #4ade80;
+      --negative:  #f87171;
+      --text:      #e2e2f0;
+      --muted:     #6b6b8a;
+      --glow:      rgba(124, 106, 255, 0.25);
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 48px 20px;
+      overflow-x: hidden;
+    }
+
+    /* Background grid */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(124,106,255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(124,106,255,0.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      width: 100%; max-width: 760px;
+      position: relative; z-index: 1;
+    }
+
+    /* Header */
+    header { text-align: center; margin-bottom: 48px; }
+    .badge {
+      display: inline-block;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px; letter-spacing: 2px;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      border-radius: 20px;
+      padding: 4px 14px;
+      margin-bottom: 20px;
+      text-transform: uppercase;
+    }
+    h1 {
+      font-size: clamp(2rem, 6vw, 3.4rem);
+      font-weight: 800;
+      line-height: 1.1;
+      background: linear-gradient(135deg, var(--text) 30%, var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .subtitle {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 0.95rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Card */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 24px;
+      transition: border-color 0.3s;
+    }
+    .card:hover { border-color: rgba(124,106,255,0.3); }
+
+    /* Textarea */
+    .textarea-label {
+      font-size: 0.75rem;
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 1.5px;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      display: block;
+    }
+    textarea {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.92rem;
+      line-height: 1.6;
+      padding: 16px;
+      resize: vertical;
+      min-height: 140px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+    }
+    textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--glow);
+    }
+    textarea::placeholder { color: var(--muted); }
+
+    /* Char counter */
+    .meta-row {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: 8px;
+    }
+    .char-count {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px; color: var(--muted);
+    }
+
+    /* Analyze button */
+    .btn {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--accent);
+      color: #fff;
+      border: none; border-radius: 10px;
+      padding: 14px 32px;
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem; font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+      margin-top: 20px;
+    }
+    .btn:hover  { background: #6a59e0; box-shadow: 0 0 20px var(--glow); }
+    .btn:active { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn svg { animation: spin 1.2s linear infinite; display: none; }
+    .btn.loading svg { display: block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Quick examples */
+    .examples { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+    .example-chip {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 6px;
+      padding: 5px 10px;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .example-chip:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* Result panel */
+    #result { display: none; }
+
+    .result-header {
+      display: flex; align-items: center; gap: 16px;
+      margin-bottom: 24px;
+    }
+    .sentiment-badge {
+      font-size: 1.5rem; font-weight: 800;
+      padding: 8px 20px;
+      border-radius: 10px;
+    }
+    .sentiment-badge.positive { background: rgba(74,222,128,0.15); color: var(--positive); }
+    .sentiment-badge.negative { background: rgba(248,113,113,0.15); color: var(--negative); }
+
+    .confidence-wrap { flex: 1; }
+    .confidence-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px; color: var(--muted);
+      letter-spacing: 1px; text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .confidence-bar-bg {
+      background: var(--border);
+      border-radius: 4px; height: 8px; overflow: hidden;
+    }
+    .confidence-bar {
+      height: 100%; border-radius: 4px;
+      transition: width 0.8s cubic-bezier(0.4,0,0.2,1);
+    }
+    .confidence-bar.positive { background: var(--positive); }
+    .confidence-bar.negative { background: var(--negative); }
+    .confidence-pct {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem; color: var(--text);
+      margin-top: 5px;
+    }
+
+    /* Attention tokens */
+    .section-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px; letter-spacing: 2px;
+      color: var(--muted); text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    .tokens { display: flex; flex-wrap: wrap; gap: 8px; }
+    .token {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      padding: 5px 12px;
+      border-radius: 6px;
+      border: 1px solid;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .token-weight { font-size: 0.7rem; opacity: 0.7; }
+
+    /* Raw score */
+    .raw-score {
+      margin-top: 20px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem; color: var(--muted);
+      display: flex; gap: 20px;
+    }
+    .raw-score span { color: var(--text); }
+
+    /* Error */
+    .error-box {
+      background: rgba(248,113,113,0.1);
+      border: 1px solid rgba(248,113,113,0.3);
+      color: var(--negative);
+      border-radius: 10px;
+      padding: 14px 18px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+    }
+
+    /* Footer */
+    footer {
+      margin-top: 48px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px; color: var(--muted);
+      text-align: center; letter-spacing: 1px;
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="badge">PyTorch · BiLSTM · Attention</div>
+    <h1>Sentiment<br>Analyzer</h1>
+    <p class="subtitle">// Deep learning · NLP · Real-time inference</p>
+  </header>
+
+  <!-- Input card -->
+  <div class="card">
+    <label class="textarea-label">Input Text</label>
+    <textarea id="inputText" placeholder="Type or paste any text to analyze its sentiment…" maxlength="2000"></textarea>
+
+    <div class="meta-row">
+      <div class="char-count"><span id="charCount">0</span> / 2000</div>
+    </div>
+
+    <div class="examples">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);align-self:center;">try →</span>
+      <button class="example-chip" onclick="setExample('positive')">positive review</button>
+      <button class="example-chip" onclick="setExample('negative')">negative review</button>
+      <button class="example-chip" onclick="setExample('mixed')">mixed opinion</button>
+    </div>
+
+    <button class="btn" id="analyzeBtn" onclick="analyze()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+      </svg>
+      Analyze Sentiment
+    </button>
+  </div>
+
+  <!-- Result card -->
+  <div class="card" id="result">
+    <div id="resultInner"></div>
+  </div>
+
+</div>
+
+<footer>
+  Built with PyTorch + Flask &nbsp;·&nbsp; BiLSTM + Attention &nbsp;·&nbsp;
+  <a href="/health">health check</a>
+</footer>
+
+<script>
+  const EXAMPLES = {
+    positive: "This movie was absolutely fantastic! The acting was superb, the storyline was engaging, and the cinematography was breathtaking. One of the best films I have seen in years. Highly recommend to everyone.",
+    negative: "Terrible waste of time and money. The plot made no sense, the characters were flat and uninteresting, and the ending was completely predictable. I walked out halfway through.",
+    mixed:    "The film had some genuinely brilliant moments and the lead performance was impressive. However the pacing was slow in the second act and the script felt rushed towards the end. Worth watching once."
+  };
+
+  const textarea   = document.getElementById("inputText");
+  const charCount  = document.getElementById("charCount");
+  const btn        = document.getElementById("analyzeBtn");
+  const resultDiv  = document.getElementById("result");
+  const resultInner = document.getElementById("resultInner");
+
+  textarea.addEventListener("input", () => {
+    charCount.textContent = textarea.value.length;
+  });
+
+  function setExample(key) {
+    textarea.value = EXAMPLES[key];
+    charCount.textContent = textarea.value.length;
+    textarea.focus();
+  }
+
+  async function analyze() {
+    const text = textarea.value.trim();
+    if (!text) { textarea.focus(); return; }
+
+    btn.disabled = true;
+    btn.classList.add("loading");
+    resultDiv.style.display = "none";
+
+    try {
+      const res  = await fetch("/predict", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text })
+      });
+      const data = await res.json();
+
+      if (data.error) {
+        resultInner.innerHTML = `<div class="error-box">⚠ ${data.error}</div>`;
+      } else {
+        renderResult(data);
+      }
+
+      resultDiv.style.display = "block";
+      resultDiv.scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+    } catch (e) {
+      resultInner.innerHTML = `<div class="error-box">⚠ Could not reach server.</div>`;
+      resultDiv.style.display = "block";
+    } finally {
+      btn.disabled = false;
+      btn.classList.remove("loading");
+    }
+  }
+
+  function renderResult(data) {
+    const isPos   = data.score >= 0.5;
+    const cls     = isPos ? "positive" : "negative";
+    const barPct  = data.confidence;
+
+    // Attention tokens HTML
+    const tokensHtml = (data.top_tokens || []).map(t => {
+      const alpha = 0.15 + t.weight * 2.5;
+      const col   = isPos
+        ? `rgba(74,222,128,${Math.min(alpha,0.6)})`
+        : `rgba(248,113,113,${Math.min(alpha,0.6)})`;
+      const border = isPos ? "rgba(74,222,128,0.4)" : "rgba(248,113,113,0.4)";
+      return `
+        <div class="token" style="background:${col};border-color:${border}">
+          ${t.word}
+          <span class="token-weight">${(t.weight * 100).toFixed(1)}%</span>
+        </div>`;
+    }).join("");
+
+    resultInner.innerHTML = `
+      <div class="result-header">
+        <div class="sentiment-badge ${cls}">${data.label}</div>
+        <div class="confidence-wrap">
+          <div class="confidence-label">Confidence</div>
+          <div class="confidence-bar-bg">
+            <div class="confidence-bar ${cls}" id="cbar" style="width:0%"></div>
+          </div>
+          <div class="confidence-pct">${barPct}%</div>
+        </div>
+      </div>
+
+      <div class="section-title">Top Attention Tokens</div>
+      <div class="tokens">${tokensHtml || "<span style='color:var(--muted);font-size:.8rem'>N/A</span>"}</div>
+
+      <div class="raw-score">
+        raw score → <span>${data.score}</span>
+        &nbsp;|&nbsp; threshold → <span>0.5</span>
+      </div>
+    `;
+
+    // Animate bar
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        document.getElementById("cbar").style.width = barPct + "%";
+      });
+    });
+  }
+
+  // Enter key shortcut (Ctrl+Enter)
+  textarea.addEventListener("keydown", e => {
+    if (e.ctrlKey && e.key === "Enter") analyze();
+  });
+</script>
+</body>
+</html>
