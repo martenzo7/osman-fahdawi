@@ -459,7 +459,7 @@ footer{text-align:center;padding:1.6rem;border-top:1px solid var(--bd);
 </head>
 <body>
 
-<div id="loader"><div class="ld-t">> INITIALIZING_PORTFOLIO.exe</div><div class="ld-b"><div class="ld-f"></div></div></div>
+<div id="loader"><div class="ld-t">> FAHDAWI.exe</div><div class="ld-b"><div class="ld-f"></div></div></div>
 <div id="cur"></div><div id="cur-r"></div>
 <canvas id="stars"></canvas>
 
@@ -471,7 +471,7 @@ footer{text-align:center;padding:1.6rem;border-top:1px solid var(--bd);
     <li><a data-nav="projects">Projects</a></li>
     <li><a data-nav="home" data-hash="#contact">Contact</a></li>
   </ul>
-  <button class="n-cv" onclick="location.href='/download/cv'"><span>↓ Download CV</span></button>
+  <button class="n-cv" onclick="location.href='/cv'"><span>↓ Download CV</span></button>
   <div class="burger" id="burger"><span></span><span></span><span></span></div>
 </nav>
 
@@ -487,13 +487,13 @@ footer{text-align:center;padding:1.6rem;border-top:1px solid var(--bd);
         <div class="h-langs"><span class="lang">AR</span><span class="lang">EN</span><span class="lang">TR</span></div>
         <div class="h-cta">
           <button class="btn-p" data-nav="projects">View Projects</button>
-          <button class="btn-s" onclick="location.href='/download/cv'">Download CV</button>
+          <button class="btn-s" onclick="location.href='/cv'">Download CV</button>
         </div>
       </div>
       <div class="ph-wrap">
         <div class="ph-ring">
           <div class="ph-inner">
-            <img src="/static/images/osman.jpg" alt="Osman">
+            <img src="/static/files/osman.jpg" alt="Osman">
             <!--<div class="ph-ph">OA</div>-->
           </div>
         </div>
@@ -508,7 +508,7 @@ footer{text-align:center;padding:1.6rem;border-top:1px solid var(--bd);
         <div class="ab-photo-w rev">
           <div class="ab-photo">
                 <!--<div class="ab-ph">OA</div>-->
-                <img src="/static/images/osman2.jpg" alt="Osman">
+                <img src="/static/files/osman2.jpg" alt="Osman">
               </div>
           <div class="ab-glow"></div>
         </div>
@@ -582,7 +582,7 @@ footer{text-align:center;padding:1.6rem;border-top:1px solid var(--bd);
         <a class="c-lk" href="https://www.linkedin.com/in/osman-fahdawi/" target="_blank">▪ LinkedIn</a>
       </div>
       <div style="text-align:center" class="rev">
-        <button class="dl-btn" onclick="location.href='/download/cv'">
+        <button class="dl-btn" onclick="location.href='/cv'">
           <span class="dl-ico">↓</span><span>Download Full CV</span>
         </button>
       </div>
@@ -969,8 +969,10 @@ async function loadDetail(slug){
   } else {
     gal.innerHTML=`<div class="no-shots">
       No screenshots yet.<br>
+      <!--
       <span style="color:var(--ac3)">Add images to:</span><br>
       <code>projects/${p.slug}/screenshots/</code>
+      -->
     </div>`;
   }
 }

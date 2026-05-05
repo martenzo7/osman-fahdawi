@@ -158,9 +158,9 @@ def project_image(slug, filename):
     return send_file(full_path)
 
 
-@app.route('/download/cv')
+@app.route('/cv')
 def download_cv():
-    cv_path = os.path.join(app.static_folder, 'files', 'osman_cv.pdf')
+    cv_path = os.path.join(app.static_folder, 'files', 'cv.pdf')
     if os.path.exists(cv_path):
         return send_file(cv_path, as_attachment=True, download_name='Osman_Abed_CV.pdf')
     abort(404)
@@ -168,7 +168,7 @@ def download_cv():
 
 with app.app_context():
     db.create_all()
-    seed(testing=1)
+    seed(testing=0)
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
